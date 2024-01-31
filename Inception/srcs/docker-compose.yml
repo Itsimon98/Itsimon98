@@ -12,7 +12,7 @@ volumes:
                 name: mariadb
                 driver: local
                 driver_opts:
-                        device: /home/sfarina/data
+                        device: /home/sfarina/data/
                         o: bind
                         type: none
 networks:

@@ -1,5 +1,6 @@
-FROM	debian:bullseye
 
+FROM	debian:bullseye
+CMD ["sleep 0.9999999999999"]
 RUN		apt-get update
 RUN		apt-get install -y nginx \
                 openssl
