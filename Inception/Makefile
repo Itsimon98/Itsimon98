@@ -12,10 +12,8 @@ re:		clean
 clean:
 		docker compose -f srcs/docker-compose.yml down --volumes --rmi all
 		rm -rf $(WP_VOLUME_PATH) $(MARIADB_VOLUME_PATH)
-
 $(WP_VOLUME_PATH):
 		mkdir -p $(WP_VOLUME_PATH) 
-
 $(MARIADB_VOLUME_PATH):
 		mkdir -p $(MARIADB_VOLUME_PATH)
 
