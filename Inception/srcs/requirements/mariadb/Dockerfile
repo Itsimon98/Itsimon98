@@ -1,24 +1,25 @@
-FROM debian:bullseye
+FROM debian:11
 
-RUN apt-get update
-RUN apt-get install -y mariadb-server \
-    mariadb-client \
-    vim \
-    && rm -rf /var/lib/apt/lists/*
+ARG SQL_DATABASE
+ARG SQL_USER
+ARG SQL_PASSWORD
+ARG SQL_ROOT_PASSWORD
 
+RUN apt update -y
+RUN apt upgrade -y
+RUN apt install mariadb-server -y
+RUN apt install vim -y
 
-RUN mkdir -p /var/run/mysqld \
-&& chown -R mysql:mysql /var/run/mysqld \
-&& chmod 777 /var/run/mysqld
+COPY conf/50-server.cnf	/etc/mysql/mariadb.conf.d/50-server.cnf
+
+RUN service mariadb start && \
+	mysql -u root -e "CREATE DATABASE IF NOT EXISTS ${SQL_DATABASE}; \
+	CREATE USER IF NOT EXISTS ${SQL_USER}@'localhost' IDENTIFIED BY '${SQL_PASSWORD}'; \
+	GRANT ALL PRIVILEGES ON ${SQL_DATABASE}.* TO ${SQL_USER}@'%' IDENTIFIED BY '${SQL_PASSWORD}'; \
+	ALTER USER 'root'@'localhost' IDENTIFIED BY '${SQL_ROOT_PASSWORD}'; \
+	FLUSH PRIVILEGES;" && \
+	mysqladmin -u root -p$SQL_ROOT_PASSWORD shutdown
+
+CMD ["mysqld_safe"]
 
 EXPOSE 3306
-
-COPY ./conf/mariadb.sh /usr/local/bin/
-COPY ./conf/50-server.cnf /etc/mysql/mariadb.conf.d/
-COPY ./conf/wordpress.sql /usr/local/bin
-RUN chmod +x /usr/local/bin/mariadb.sh
-RUN chmod +x /usr/local/bin/wordpress.sql
-
-ENTRYPOINT [ "/usr/local/bin/mariadb.sh" ]
-
-CMD ["mysqld", "--bind-address=0.0.0.0"]

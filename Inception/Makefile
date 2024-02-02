@@ -1,20 +1,22 @@
-all : up
+include srcs/.env
 
-up : 
-	@docker-compose -f ./srcs/docker-compose.yml up   -d --build
+all:	$(WP_VOLUME_PATH) $(MARIADB_VOLUME_PATH)
+		docker compose -f ./srcs/docker-compose.yml up --build
 
-down : 
-	@docker-compose -f ./srcs/docker-compose.yml down
+down:
+		docker compose -f ./srcs/docker-compose.yml down -v
 
-stop : 
-	@docker-compose -f ./srcs/docker-compose.yml stop
+re:		clean
+		$(MAKE) all
 
-start : 
-	@docker-compose -f ./srcs/docker-compose.yml start
+clean:
+		docker compose -f srcs/docker-compose.yml down --volumes --rmi all
+		rm -rf $(WP_VOLUME_PATH) $(MARIADB_VOLUME_PATH)
 
-status : 
-	@docker ps
+$(WP_VOLUME_PATH):
+		mkdir -p $(WP_VOLUME_PATH) 
 
-host:
-	@ sudo echo "127.0.0.1 sfarina.42.fr" >> /etc/hosts
-	@ sudo echo "127.0.0.1 www.sfarina.42.fr" >> /etc/hosts
+$(MARIADB_VOLUME_PATH):
+		mkdir -p $(MARIADB_VOLUME_PATH)
+
+.PHONY: all re down clean fclean

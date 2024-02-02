@@ -1,65 +1,77 @@
-version: '3.5'
-
-volumes:
-        wordpress:
-                name: wordpress
-                driver: local
-                driver_opts:
-                        device: /home/sfarina/data/
-                        o: bind
-                        type: none
-        mariadb:
-                name: mariadb
-                driver: local
-                driver_opts:
-                        device: /home/sfarina/data/
-                        o: bind
-                        type: none
-networks:
-  inception:
-    name: inception
+version: '3'
 
 services:
-  nginx:
-    container_name: nginx
-    build:
-      context: ./requirements/nginx
-      dockerfile: Dockerfile
-    image: nginx:42
-    ports:
-      - 443:443
-    volumes:
-      - wordpress:/var/www/html
-    restart: always
+  mariadb:
+    container_name: mariadb
+    image: mariadb
     networks:
       - inception
+    build:
+      context: requirements/mariadb
+      dockerfile: Dockerfile
+      args:
+        SQL_DATABASE: $SQL_DATABASE
+        SQL_USER: $SQL_USER
+        SQL_PASSWORD: $SQL_PASSWORD
+        SQL_ROOT_PASSWORD: $SQL_ROOT_PASSWORD
+    env_file: .env
+    volumes:
+      - mariadb:/var/lib/mysql
+    restart: unless-stopped
+    expose:
+      - "3306"
+
+  nginx:
+    container_name: nginx
+    image: nginx
+    networks:
+      - inception
+    depends_on:
+      - wordpress
+    build:
+      context: requirements/nginx
+      dockerfile: Dockerfile
+      args:
+        WP_PATH: $WP_PATH
+        WP_URL: $WP_URL
+    env_file: .env
+    volumes:
+      - wordpress:/var/www/wordpress
+    restart: on-failure
+    ports:
+      - "443:443"
 
   wordpress:
     container_name: wordpress
-    build: 
-      context: ./requirements/wordpress
-      dockerfile: Dockerfile
-    image: wordpress:42
-    depends_on:
+    image: wordpress
+    networks:
+      - inception
+    depends_on: 
       - mariadb
-    volumes:
-      - wordpress:/var/www/html
-    env_file:
-      - .env
-    networks:
-      - inception
-    restart: always
-
-  mariadb:
-    container_name: mariadb
     build:
-      context: ./requirements/mariadb
+      context: requirements/wordpress
       dockerfile: Dockerfile
-    image: mariadb:42
+    env_file: .env
     volumes:
-      - mariadb:/var/lib/mysql
-    env_file:
-      - .env
-    networks:
-      - inception
-    restart: always
+      - wordpress:/var/www/wordpress
+    restart: on-failure
+    expose:
+      - "9000"
+
+volumes:
+  wordpress:
+    driver: local
+    driver_opts:
+      type: 'none'
+      o: 'bind'
+      device: $WP_VOLUME_PATH
+  mariadb:
+    driver: local
+    driver_opts:
+      type: 'none'
+      o: 'bind'
+      device: $MARIADB_VOLUME_PATH
+
+networks:
+  inception:
+    driver: bridge
